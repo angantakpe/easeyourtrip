@@ -1,0 +1,62 @@
+{
+    "ocr_categories": [
+        "passport_front",
+        "passport_back",
+        "visa_page",
+        "travel_doc",
+        "aadhar_front",
+        "aadhar_back",
+        "aadhar_full",
+        "aadhar_full2",
+        "pancard"
+    ],
+    "all_categories": [
+        "passport_front",
+        "passport_back",
+        "passport_other",
+        "passport_other_blank",
+        "passport_semi_blank",
+        "visa_page",
+        "aadhar_front",
+        "aadhar_back",
+        "aadhar_full",
+        "aadhar_full2",
+        "pancard",
+        "balance_certificate",
+        "account_statement",
+        "fixed_deposit_summary",
+        "travel_insurance",
+        "flight_ticket",
+        "hotel_ticket",
+        "itinerary",
+        "letters",
+        "salary_slip",
+        "birth_certificate",
+        "business_balance_sheet",
+        "business_registration",
+        "divorce_certificate",
+        "driving_licence",
+        "employment_letter",
+        "itr",
+        "marriage_certificate",
+        "property_ownership",
+        "statement_of_purpose",
+        "us_pr_card",
+        "utility_bills",
+        "photo"
+    ],
+    "no_extraction": [
+        "passport_other",
+        "passport_other_blank",
+        "passport_semi_blank",
+        "visa_page"
+    ],
+    "no_cropping": [
+        "aadhar_front"
+    ],
+    "multi_page_categories": [
+        "account_statement",
+        "travel_insurance",
+        "itinerary"
+    ]
+}

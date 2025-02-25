@@ -1,0 +1,69 @@
+{
+    "passport_front": [
+        "passport_front",
+        "visa_page",
+        "us_pr_card"
+    ],
+    "passport_back": [
+        "passport_back"
+    ],
+    "visa_page": [
+        "passport_front",
+        "visa_page",
+        "us_pr_card"
+    ],
+    "us_pr_card": [
+        "passport_front",
+        "visa_page",
+        "us_pr_card",
+        "aadhar_front",
+        "pancard"
+    ],
+    "travel_doc": [
+        "account_statement",
+        "salary_slip",
+        "letters",
+        "fixed_deposit_summary",
+        "form_16",
+        "itr",
+        "balance_certificate",
+        "hotel_ticket",
+        "flight_ticket",
+        "travel_insurance",
+        "itinerary",
+        "birth_certificate",
+        "business_balance_sheet",
+        "business_registration",
+        "divorce_certificate",
+        "driving_licence",
+        "employment_letter",
+        "marriage_certificate",
+        "property_ownership",
+        "statement_of_purpose",
+        "utility_bills"
+    ],
+    "aadhar_front": [
+        "aadhar_front",
+        "pancard",
+        "aadhar_back",
+        "us_pr_card"
+    ],
+    "aadhar_back": [
+        "aadhar_front",
+        "pancard",
+        "aadhar_back",
+        "us_pr_card"
+    ],
+    "aadhar_full": [
+        "aadhar_full"
+    ],
+    "aadhar_full2": [
+        "aadhar_full"
+    ],
+    "pancard": [
+        "aadhar_front",
+        "pancard",
+        "aadhar_back",
+        "us_pr_card"
+    ]
+}

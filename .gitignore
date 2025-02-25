@@ -1,0 +1,10 @@
+.env
+__pycache__
+static/
+venv*
+excel_template.py
+log_csv.csv
+Release-23.08.0-0
+test_folder
+.venv
+logs
