@@ -3,7 +3,7 @@ from openai import AzureOpenAI
 from dotenv import load_dotenv
 from pydantic import BaseModel
 import time
-
+from src.logging.logger import debug_log
 load_dotenv(override = True)
 
 
@@ -21,7 +21,7 @@ openaiclient_textemb = openai.AzureOpenAI(
 
 
 
-def call_llm( input_text : str  , messages : list , baseclass:BaseModel ):
+def call_llm( input_text : str  , messages : list , baseclass:BaseModel , request_id ):
     try:
         for i in range(3):
             try:
@@ -40,11 +40,11 @@ def call_llm( input_text : str  , messages : list , baseclass:BaseModel ):
                 final_response = validate_response_json.dict()
                 return final_response
             except Exception as e:
-                print(400,f"exception occured in call_llm: {str(e)}")
+                debug_log(f"Exception in {i} request of calling openai as {str(e)} ", "call_llm", request_id)
                 time.sleep(60)
         return dict(baseclass(**{field: None for field in baseclass.__fields__}))        
     except Exception as e:
-        print("EXCEPTION as e:" ,str(e))
+        debug_log(f"Exception in call_llm as {str(e)} ", "call_llm", request_id)
         return dict(baseclass(**{field: None for field in baseclass.__fields__}))
 
 

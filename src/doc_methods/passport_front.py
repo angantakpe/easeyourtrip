@@ -5,14 +5,14 @@ from mrz.checker.td3 import TD3CodeChecker
 from datetime import datetime
 import os , json 
 import re
- 
+from src.logging.logger import debug_log 
 
 with open(os.path.join('assests', 'country_states.json'), 'r') as f:
     country_state = json.load(f)
 f.close()    
 COUNTRY_LIST = country_state.keys()
 
-def Passport_front(textdata,text_string , csv_row , PassportFrontBaseClass):
+def Passport_front(textdata,text_string , csv_row , PassportFrontBaseClass , request_id):
         try:
             DateofBirth = None
             Type = None
@@ -492,7 +492,7 @@ def Passport_front(textdata,text_string , csv_row , PassportFrontBaseClass):
             data =data.dict()
             return data 
         except Exception as e:
-            print("Exception in Passport front as ::", str(e)) 
+            debug_log(f"Exception in passport_front as {str(e)} ", "img_process", request_id)
             data =  {"type_passport":None,"country_code": None,"country":None,"passport_number":None,"last_name": None,"first_name": None,"citizenship": None,"sex":None,"dob": None,"place_of_birth": None,"country_of_birth" : None,   "place_of_issue":None,"passport_issue_date": None,"passport_expiry_date":None,"mrz": None}
             data = PassportFrontBaseClass(**data)
             data =data.dict()

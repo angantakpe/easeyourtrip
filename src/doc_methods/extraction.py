@@ -12,7 +12,7 @@ from src.azure_services.llm import call_llm
 from src.face_api.face_func import get_face_landmarks
 from src.utils.util import make_photo_conclusion
 from datetime import datetime
-# from src.utils.util import pagecatname
+from src.logging.logger import debug_log
 import json , time , os
 
 try:#The standard json schema at the document level is predefined in assests/documents.json. Loading the schema for updating it.
@@ -35,7 +35,7 @@ def get_document_prompt( document_type : str ):
         print("Exception in get_document_prompt as :", str(e))
         return None
 
-def extract_data_based_on_doctype(image_schema , new_cat   , cropped_image_coordinates  ,new_image_name , new_img_path  ,ocr_resp, new_image_url ,new_img_diam ,  csv_row ,sql_dict , jsonObj , tempFilePaths):
+def extract_data_based_on_doctype(image_schema , new_cat   , cropped_image_coordinates  ,new_image_name , new_img_path  ,ocr_resp, new_image_url ,new_img_diam ,  csv_row ,sql_dict , jsonObj , tempFilePaths , request_id):
     try:
         if new_cat == 'other':
             image_schema["data"].update({})
@@ -52,7 +52,7 @@ def extract_data_based_on_doctype(image_schema , new_cat   , cropped_image_coord
 
         elif new_cat == 'passport_front':
             jsonObj["Time"]["Passport_front_called"] = str(datetime.now())
-            resp =  Passport_front( ocr_resp["text_blob"] , ocr_resp['text_string'] , csv_row , PassportFrontSchema)
+            resp =  Passport_front( ocr_resp["text_blob"] , ocr_resp['text_string'] , csv_row , PassportFrontSchema  , request_id)
             jsonObj["Time"]["Passport_front_done"] = str(datetime.now())
             jsonObj["Time"]["Passport_front_time"]= str( datetime.strptime(jsonObj["Time"]["Passport_front_done"], "%Y-%m-%d %H:%M:%S.%f") - datetime.strptime(jsonObj["Time"]["Passport_front_called"], "%Y-%m-%d %H:%M:%S.%f") )
             coordinates = get_coordinates(resp ,cropped_image_coordinates)
@@ -66,7 +66,7 @@ def extract_data_based_on_doctype(image_schema , new_cat   , cropped_image_coord
                 prompt_template = get_document_prompt("passport_back")
                 jsonObj["Time"]["Passport_back_called"] = str(datetime.now())
                 start_time = time.time()
-                resp = call_llm(ocr_resp["text_string"] , prompt_template , PassportBackSchema)
+                resp = call_llm(ocr_resp["text_string"] , prompt_template , PassportBackSchema , request_id)
                 openai_time = str(time.time() - start_time)
             except:
                 resp = {}
@@ -83,7 +83,7 @@ def extract_data_based_on_doctype(image_schema , new_cat   , cropped_image_coord
         elif new_cat == 'flight_ticket' :  
             prompt_template = get_document_prompt("flight_ticket")
             start_time = time.time()
-            resp = flight_ticket_llm(ocr_resp["text_string"] , prompt_template , FlightTicketSchema)
+            resp = flight_ticket_llm(ocr_resp["text_string"] , prompt_template , FlightTicketSchema , request_id)
             openai_time = str(time.time() - start_time)
             coordinates = get_coordinates(resp , cropped_image_coordinates)
             resp["values_coordinates"] = coordinates
@@ -97,7 +97,7 @@ def extract_data_based_on_doctype(image_schema , new_cat   , cropped_image_coord
             print("text_string::::::::" ,ocr_resp["text_string"] )
             prompt_template = get_document_prompt("national_id")
             start_time = time.time()
-            resp = call_llm(ocr_resp["text_string"] , prompt_template , NationalIdSchema)
+            resp = call_llm(ocr_resp["text_string"] , prompt_template , NationalIdSchema, request_id)
             openai_time = str(time.time() - start_time)
             
             coordinates = get_coordinates(resp ,cropped_image_coordinates )
@@ -124,7 +124,7 @@ def extract_data_based_on_doctype(image_schema , new_cat   , cropped_image_coord
                 response = get_face_landmarks(uploadFileName=None, img_path= new_img_path ,image_name= new_image_name,customCrop = False , cropHeight = None ,cropWidth = None,cropImg = False, jsonObj = jsonObj , tempFilePaths = tempFilePaths)
                 sql_dict.update({"face_api_time" : str(time.time() - start_time) })
             except Exception as e:
-                print("Exception in calling get_face_landmarks as ::", str(e))
+                debug_log(f"Exception in get_face_landmarks as {str(e)} ", "img_process", request_id)
                 append_csv(csv_row , "face_api_failed")
                 sql_dict.update({'face_api_time' : "face_api_failed"})
                 response = False
@@ -154,7 +154,7 @@ def extract_data_based_on_doctype(image_schema , new_cat   , cropped_image_coord
         elif new_cat == 'salary_slip':
             prompt_template = get_document_prompt("salary_slip")
             start_time = time.time()
-            resp = call_llm(ocr_resp["text_string"] , prompt_template , SalarySlipSchema)
+            resp = call_llm(ocr_resp["text_string"] , prompt_template , SalarySlipSchema, request_id)
             openai_time = str(time.time() - start_time)
 
             coordinates = get_coordinates(resp ,cropped_image_coordinates )
@@ -167,7 +167,7 @@ def extract_data_based_on_doctype(image_schema , new_cat   , cropped_image_coord
         elif new_cat == 'account_statement':
             prompt_template = get_document_prompt('account_statement')
             start_time = time.time()
-            resp = call_llm(ocr_resp["text_string"] , prompt_template , AccountStatementSchema)
+            resp = call_llm(ocr_resp["text_string"] , prompt_template , AccountStatementSchema, request_id)
             openai_time = str(time.time() - start_time)
             coordinates = get_coordinates(resp ,cropped_image_coordinates )
             resp["values_coordinates"] = coordinates
@@ -180,7 +180,7 @@ def extract_data_based_on_doctype(image_schema , new_cat   , cropped_image_coord
         elif new_cat == 'balance_certificate':
             prompt_template = get_document_prompt('balance_certificate')
             start_time = time.time()
-            resp = call_llm(ocr_resp["text_string"] , prompt_template , BalanceCertificateSchema)
+            resp = call_llm(ocr_resp["text_string"] , prompt_template , BalanceCertificateSchema, request_id)
             openai_time = str(time.time() - start_time)
             coordinates = get_coordinates(resp ,cropped_image_coordinates )
             resp["values_coordinates"] = coordinates
@@ -193,7 +193,7 @@ def extract_data_based_on_doctype(image_schema , new_cat   , cropped_image_coord
         elif new_cat == 'fixed_deposit_summary':
             prompt_template = get_document_prompt('fixed_deposit_summary')
             start_time = time.time()
-            resp = call_llm(ocr_resp["text_string"] , prompt_template , FixedDepositSummarySchema)
+            resp = call_llm(ocr_resp["text_string"] , prompt_template , FixedDepositSummarySchema, request_id)
             openai_time = str(time.time() - start_time)
             coordinates = get_coordinates(resp ,cropped_image_coordinates )
             resp["values_coordinates"] = coordinates
@@ -205,7 +205,7 @@ def extract_data_based_on_doctype(image_schema , new_cat   , cropped_image_coord
         elif new_cat == 'hotel_ticket':
             prompt_template = get_document_prompt('hotel_ticket')
             start_time = time.time()
-            resp = call_llm(ocr_resp["text_string"] , prompt_template , HotelTicketSchema)
+            resp = call_llm(ocr_resp["text_string"] , prompt_template , HotelTicketSchema, request_id)
             openai_time = str(time.time() - start_time)
             coordinates = get_coordinates(resp ,cropped_image_coordinates )
             resp["values_coordinates"] = coordinates
@@ -218,7 +218,7 @@ def extract_data_based_on_doctype(image_schema , new_cat   , cropped_image_coord
         elif new_cat == 'travel_insurance':
             prompt_template = get_document_prompt(new_cat)
             start_time = time.time()
-            resp = call_llm(ocr_resp["text_string"] , prompt_template , TravelInsuranceSchema)
+            resp = call_llm(ocr_resp["text_string"] , prompt_template , TravelInsuranceSchema, request_id)
             openai_time = str(time.time() - start_time)
             coordinates = get_coordinates(resp ,cropped_image_coordinates )
             resp["values_coordinates"] = coordinates
@@ -230,7 +230,7 @@ def extract_data_based_on_doctype(image_schema , new_cat   , cropped_image_coord
         elif new_cat == 'letters':
             prompt_template = get_document_prompt(new_cat)
             start_time = time.time()
-            resp = call_llm(ocr_resp["text_string"] , prompt_template , LettersSchema)
+            resp = call_llm(ocr_resp["text_string"] , prompt_template , LettersSchema, request_id)
             openai_time = str(time.time() - start_time)
             coordinates = get_coordinates(resp ,cropped_image_coordinates )
             resp["values_coordinates"] = coordinates
@@ -248,7 +248,7 @@ def extract_data_based_on_doctype(image_schema , new_cat   , cropped_image_coord
 
             prompt_template = get_document_prompt(new_cat)
             start_time = time.time()
-            resp = call_llm(ocr_resp["text_string"] , prompt_template , ItinerarySchema)
+            resp = call_llm(ocr_resp["text_string"] , prompt_template , ItinerarySchema, request_id)
             openai_time = str(time.time() - start_time)
             merged_country_list = []
             if resp.get("country_stay_list"):
@@ -274,7 +274,7 @@ def extract_data_based_on_doctype(image_schema , new_cat   , cropped_image_coord
         elif new_cat == 'birth_certificate':
             prompt_template = get_document_prompt(new_cat)
             start_time = time.time()
-            resp = call_llm(ocr_resp["text_string"] , prompt_template , BirthCertificate)
+            resp = call_llm(ocr_resp["text_string"] , prompt_template , BirthCertificate, request_id)
             openai_time = str(time.time() - start_time)
             coordinates = get_coordinates(resp ,cropped_image_coordinates )
             resp["values_coordinates"] = coordinates
@@ -287,7 +287,7 @@ def extract_data_based_on_doctype(image_schema , new_cat   , cropped_image_coord
         elif new_cat == 'business_balance_sheet':
             prompt_template = get_document_prompt(new_cat)
             start_time = time.time()
-            resp = call_llm(ocr_resp["text_string"] , prompt_template , BusinessBalanceSheet)
+            resp = call_llm(ocr_resp["text_string"] , prompt_template , BusinessBalanceSheet, request_id)
             openai_time = str(time.time() - start_time)
             coordinates = get_coordinates(resp ,cropped_image_coordinates )
             resp["values_coordinates"] = coordinates
@@ -300,7 +300,7 @@ def extract_data_based_on_doctype(image_schema , new_cat   , cropped_image_coord
         elif new_cat == 'employment_letter':
             prompt_template = get_document_prompt(new_cat)
             start_time = time.time()
-            resp = call_llm(ocr_resp["text_string"] , prompt_template , EmploymentLetter)
+            resp = call_llm(ocr_resp["text_string"] , prompt_template , EmploymentLetter, request_id)
             openai_time = str(time.time() - start_time)
             coordinates = get_coordinates(resp ,cropped_image_coordinates )
             resp["values_coordinates"] = coordinates
@@ -313,7 +313,7 @@ def extract_data_based_on_doctype(image_schema , new_cat   , cropped_image_coord
         elif new_cat == 'itr':
             prompt_template = get_document_prompt(new_cat)
             start_time = time.time()
-            resp = call_llm(ocr_resp["text_string"] , prompt_template , IncomeTaxReturn)
+            resp = call_llm(ocr_resp["text_string"] , prompt_template , IncomeTaxReturn, request_id)
             openai_time = str(time.time() - start_time)
             coordinates = get_coordinates(resp ,cropped_image_coordinates )
             resp["values_coordinates"] = coordinates
@@ -328,7 +328,7 @@ def extract_data_based_on_doctype(image_schema , new_cat   , cropped_image_coord
             prompt_template = get_document_prompt(new_cat)
              
             start_time = time.time()
-            resp = call_llm(ocr_resp["text_string"] , prompt_template , MarriageCertificate)
+            resp = call_llm(ocr_resp["text_string"] , prompt_template , MarriageCertificate, request_id)
             openai_time = str(time.time() - start_time)
 
             coordinates = get_coordinates(resp ,cropped_image_coordinates )
@@ -343,7 +343,7 @@ def extract_data_based_on_doctype(image_schema , new_cat   , cropped_image_coord
             prompt_template = get_document_prompt(new_cat)
              
             start_time = time.time()
-            resp = call_llm(ocr_resp["text_string"] , prompt_template , PropertyOwnership)
+            resp = call_llm(ocr_resp["text_string"] , prompt_template , PropertyOwnership, request_id)
             openai_time = str(time.time() - start_time)
 
             coordinates = get_coordinates(resp ,cropped_image_coordinates )
@@ -357,7 +357,7 @@ def extract_data_based_on_doctype(image_schema , new_cat   , cropped_image_coord
         elif new_cat == 'statement_of_purpose':
             prompt_template = get_document_prompt(new_cat)
             start_time = time.time()
-            resp = call_llm(ocr_resp["text_string"] , prompt_template , StatementOfPurpose)
+            resp = call_llm(ocr_resp["text_string"] , prompt_template , StatementOfPurpose, request_id)
             openai_time = str(time.time() - start_time)
             coordinates = get_coordinates(resp ,cropped_image_coordinates )
             resp["values_coordinates"] = coordinates
@@ -370,7 +370,7 @@ def extract_data_based_on_doctype(image_schema , new_cat   , cropped_image_coord
         elif new_cat == 'us_pr_card':
             prompt_template = get_document_prompt(new_cat)
             start_time = time.time()
-            resp = call_llm(ocr_resp["text_string"] , prompt_template , UsPrCard)
+            resp = call_llm(ocr_resp["text_string"] , prompt_template , UsPrCard, request_id)
             openai_time = str(time.time() - start_time)
             coordinates = get_coordinates(resp ,cropped_image_coordinates )
             resp["values_coordinates"] = coordinates
@@ -383,7 +383,7 @@ def extract_data_based_on_doctype(image_schema , new_cat   , cropped_image_coord
         elif new_cat == 'utility_bills':
             prompt_template = get_document_prompt(new_cat)
             start_time = time.time()
-            resp = call_llm(ocr_resp["text_string"] , prompt_template , UtilityBills)
+            resp = call_llm(ocr_resp["text_string"] , prompt_template , UtilityBills, request_id)
             openai_time = str(time.time() - start_time)
             coordinates = get_coordinates(resp ,cropped_image_coordinates )
             resp["values_coordinates"] = coordinates
@@ -395,7 +395,7 @@ def extract_data_based_on_doctype(image_schema , new_cat   , cropped_image_coord
 
         return image_schema
     except Exception as e:
-        print("Exception in extract_data_based_on_doctype as :" , str(e))
+        debug_log(f"Exception in extract_data_based_on_doctype as {str(e)} ", "img_process", request_id)
         return image_schema
     
 

@@ -5,6 +5,7 @@ from azure.cognitiveservices.vision.computervision.models import OperationStatus
 from ratelimit import limits, sleep_and_retry
 from dotenv import load_dotenv
 from src.utils.logs import append_csv  
+from src.logging.logger import debug_log
 
 load_dotenv(override = True)
 #azure face api
@@ -20,7 +21,7 @@ ONE_SECOND = 1
 MAX_CALLS_PER_SECOND = 9
 @sleep_and_retry
 @limits(calls=MAX_CALLS_PER_SECOND, period=ONE_SECOND)
-def Azure_ocr_sdk(image_path , csv_row , sql_dict):
+def Azure_ocr_sdk(image_path , csv_row , sql_dict , request_id):
     try:
         azureOcr_Raw_Response = ""
         azureOcr_Method_Response = "" 
@@ -30,6 +31,7 @@ def Azure_ocr_sdk(image_path , csv_row , sql_dict):
             start_t = time.time()
             response = cv_client.read_in_stream(open(image_path,'rb'), raw=True, language='en', model_version='latest')
         except Exception as e:
+            debug_log(f"Exception in sending Azure Ocr request as {str(e)} ", "img_process", request_id)
             append_csv(csv_row , "Azure_OCR_Failed")
             sql_dict.update({'ocr_time' : "Azure_OCR_Failed" })
 
@@ -79,7 +81,7 @@ def Azure_ocr_sdk(image_path , csv_row , sql_dict):
         azureOcr_Method_Response = {'text_blob':text_blob, 'text_string':text_string, 'words_blob':words_blob, 'confidence_scores':confidence_scores, 'words_loc':words_pos}
         return {'text_blob':text_blob, 'text_string':text_string, 'words_blob':words_blob, 'confidence_scores':confidence_scores, 'words_loc':words_pos,"angle": angle, "azureOcr_Raw_Response":azureOcr_Raw_Response, "azureOcr_Method_Response":azureOcr_Method_Response}
     except Exception as e:
-        print("Exception in AzureOcr as :",str(e))
+        debug_log(f"Exception in Azure Ocr request as {str(e)} ", "img_process", request_id)
         return {'text_blob':[], 'text_string':"", 'words_blob':[], 'confidence_scores':[], 'words_loc':{},"angle": angle, "azureOcr_Raw_Response":azureOcr_Raw_Response, "azureOcr_Method_Response":azureOcr_Method_Response}
 
 

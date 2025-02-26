@@ -1,14 +1,15 @@
 from src.azure_services.llm import call_llm
 import json, os
 from pydantic import BaseModel
+from src.logging.logger import debug_log
 
 with open(os.path.join('assests', 'airports.json'), 'r') as file:
     AIRPORT_JSON = json.load(file)
 file.close()
 
-def flight_ticket_llm(source_text_string : str , FLIGHTTICKET_PROMPT : str , FlightTicketSchema : BaseModel):
+def flight_ticket_llm(source_text_string : str , FLIGHTTICKET_PROMPT : str , FlightTicketSchema : BaseModel , request_id):
     try:
-        response = call_llm(source_text_string ,FLIGHTTICKET_PROMPT , FlightTicketSchema)
+        response = call_llm(source_text_string ,FLIGHTTICKET_PROMPT , FlightTicketSchema , request_id)
         if response.get("journey_details"):
             print("journey_details is not NONE")
 
@@ -27,5 +28,5 @@ def flight_ticket_llm(source_text_string : str , FLIGHTTICKET_PROMPT : str , Fli
                     journey_det["destination_country_name"] = destination_country_name.upper()
         return response
     except Exception as e:
-        print("Exception occured in flight_ticket_llm as ::", str(e))
+        debug_log(f"Exception in flight_ticket_llm as {str(e)} ", "flight_ticket_llm", request_id)
         return response

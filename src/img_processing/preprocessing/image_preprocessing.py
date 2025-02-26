@@ -6,7 +6,7 @@ from src.utils.coordinates import adjust_coordinates_after_crop
 from src.utils.logs import  append_csv
 from datetime import datetime
 from src.azure_services.cloud import upload_to_azure , get_img_url_with_blob_sas_token
-
+from src.logging.logger import debug_log
 try:#The standard json schema at the document level is predefined in assests/documents.json. Loading the schema for updating it.
     with open(os.path.join('assests', 'ocr_categories.json'), 'r') as f:
         docs = json.load(f)
@@ -87,7 +87,7 @@ def preprocess_image(folder_path, image, destination_folder_path=None): # do not
         print("Exception occured in preprocess_image: ",e)
         raise e
     
-def rotate_image(image_path, angle):
+def rotate_image(image_path, angle , request_id):
     try:
         # Open the image file
         with Image.open(image_path) as img:
@@ -104,7 +104,7 @@ def rotate_image(image_path, angle):
         img.close()    
         return   output_path  
     except Exception as e:
-        print("Exception in rotate_image as :::", str(e))
+        debug_log(f"Exception in rotate_image as {str(e)} ", "rotate_image", request_id)
         return  image_path
 
 
@@ -171,7 +171,7 @@ def rotate_bounding_box(bbox, angle, original_image_size, rotated_image_size):
     
 
 
-def rotate_coordinates(word_locations, angle, original_image_shape, rotated_image_shape):
+def rotate_coordinates(word_locations, angle, original_image_shape, rotated_image_shape , request_id):
     """Rotate word locations given an angle and the original image shape."""
     try:
         width, height = original_image_shape
@@ -207,7 +207,7 @@ def rotate_coordinates(word_locations, angle, original_image_shape, rotated_imag
 
         return True , rotated_locations
     except Exception as e:
-        print("Exception in rotate_coordinates:", str(e))
+        debug_log(f"Exception in rotate_coordinates as {str(e)} ", "rotate_coordinates", request_id)
         return False , word_locations
     
 
@@ -255,7 +255,7 @@ def crop_passport(cropped_image_path ,  locs):
         return  (False ,  cropped_image_path , None , None )            
     
 
-def crop_img_text_locations( original_img_pil , original_img_path , word_coordinates , document_type , text_string):
+def crop_img_text_locations( original_img_pil , original_img_path , word_coordinates , document_type , text_string , request_id):
 
     """
     original_img_pil : PIL object of the original image
@@ -304,7 +304,7 @@ def crop_img_text_locations( original_img_pil , original_img_path , word_coordin
             return original_img_pil , word_coordinates ,list(word_coordinates.keys())
 
     except Exception as e:
-        print("Exception in crop_img_text_locations as :" , str(e))
+        debug_log(f"Exception in crop_img_text_locations as {str(e)} ", "crop_img_text_locations", request_id)
         return original_img_pil , word_coordinates ,list(word_coordinates.keys())
 
 

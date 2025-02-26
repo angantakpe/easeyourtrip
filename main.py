@@ -6,6 +6,7 @@ from src.utils.util import *
 from src.azure_services.cloud import *
 import  time , base64
 from src.img_processing.preprocessing.image_preprocessing import *
+from src.face_api.face_func import get_face_landmarks
 from src.azure_services.computerVision import *
 from src.doc_methods.valid_test import *
 from src.doc_methods.extraction import extract_data_based_on_doctype
@@ -73,6 +74,7 @@ def process_page_threads(i,
         
     except Exception as e:
         print("Exception in csv_row as :", str(e))
+        debug_log
         csv_row = []
     pg_result = img_process(new_img_path, new_image_name, new_image_url ,  i+1 ,updated_img_cat, updated_txt_cat, jsonObj , csv_row ,sql_dict, tempFilePaths , request_id)   
     jsonObj["Time"][f"Processed_Page_{i+1}"] = str(datetime.now())
@@ -277,6 +279,7 @@ def img_process(new_img_path ,new_image_name,new_image_url , pg_no ,updated_img_
             delete_cache(str(img_hash))
             image_data = None 
     except Exception as e:
+        debug_log(f"Exception in checking cache as {str(e)} ", "img_process", request_id)
         print("Exception in making image hash as ::", str(e))     
         image_data = None
             
@@ -295,7 +298,8 @@ def img_process(new_img_path ,new_image_name,new_image_url , pg_no ,updated_img_
             with open(os.path.join('assests','image.json')) as f:      #image 
                 image_schema = json.load(f)
             f.close()    
-        except Exception as e:    
+        except Exception as e:   
+            debug_log(f"Exception in loading image_schema as {str(e)} ", "img_process", request_id)
             print("Exception in getting Image schema as :", str(e))
 
         try:    
@@ -303,14 +307,14 @@ def img_process(new_img_path ,new_image_name,new_image_url , pg_no ,updated_img_
             height, width, channels = new_img_array.shape
             crop_img_diam = (width ,height)
             # print("cropped image diamentiions::::", Image.open(cropped_image_path).size  )
-            new_emb_tensor = get_embedding(new_img_array)
+            new_emb_tensor = get_embedding(new_img_array , request_id)
             new_emb = new_emb_tensor.tolist()
             db_path = os.getenv("DB_PATH")
             jsonObj["Time"][f"Classify_started_{pg_no}"] = str(datetime.now())
 
             if updated_img_cat== None:
                 start_cl_t = time.time()
-                new_cat = get_category(new_emb, csv_row)
+                new_cat = get_category(new_emb, csv_row , request_id)
                 end_cl_t = time.time()
                 append_csv(csv_row , new_cat)
                 append_csv(csv_row , end_cl_t - start_cl_t)
@@ -321,11 +325,11 @@ def img_process(new_img_path ,new_image_name,new_image_url , pg_no ,updated_img_
 
             if (new_cat in OCR_CATS):
                 jsonObj["Time"]["Azure_called"] = str(datetime.now())
-                ocr_resp = Azure_ocr_sdk(cropped_image_path , csv_row , sql_dict)
+                ocr_resp = Azure_ocr_sdk(cropped_image_path , csv_row , sql_dict , request_id)
                 if updated_txt_cat==None:
                     # new_cat = 'passport_front'
                     text_st = time.time()
-                    new_cat = get_category_text(ocr_resp['text_string'] ,new_cat ,csv_row,sql_dict)
+                    new_cat = get_category_text(ocr_resp['text_string'] ,new_cat ,csv_row,sql_dict , request_id)
 
                     text_end = time.time()
                     sql_dict.update({"text_class_time" : text_end - text_st })
@@ -336,14 +340,14 @@ def img_process(new_img_path ,new_image_name,new_image_url , pg_no ,updated_img_
                 # rotated_cropped_img_url , rotated_cropped_img_dim , cropped_image_coordinates , cropped_text_blob =  rotate_and_crop_image(cropped_image_path, ocr_resp["angle"]) 
 
                 angle= ocr_resp["angle"]
-                rotate_im_path = rotate_image(cropped_image_path, angle) 
+                rotate_im_path = rotate_image(cropped_image_path, angle , request_id) 
                 rotate_im_name = new_image_name.split('.')[0] + "_cropped_rotated." + new_image_name.split('.')[1]
                 rotate_im_dim = Image.open(rotate_im_path).size
-                rot_coord_staus , rotated_cordinates = rotate_coordinates( ocr_resp['words_loc'] ,angle, Image.open(cropped_image_path).size, Image.open(rotate_im_path).size)
+                rot_coord_staus , rotated_cordinates = rotate_coordinates( ocr_resp['words_loc'] ,angle, Image.open(cropped_image_path).size, Image.open(rotate_im_path).size , request_id)
                 if rot_coord_staus:
-                    cropped_image , cropped_image_coordinates , cropped_text_blob =   crop_img_text_locations( Image.open(rotate_im_path) , rotate_im_path , rotated_cordinates ,new_cat , ocr_resp["text_string"] )                      
+                    cropped_image , cropped_image_coordinates , cropped_text_blob =   crop_img_text_locations( Image.open(rotate_im_path) , rotate_im_path , rotated_cordinates ,new_cat , ocr_resp["text_string"] , request_id )                      
                 else:
-                    cropped_image , cropped_image_coordinates , cropped_text_blob =   crop_img_text_locations( Image.open(cropped_image_path) , cropped_image_path , ocr_resp['words_loc'] ,new_cat , ocr_resp["text_string"] )  
+                    cropped_image , cropped_image_coordinates , cropped_text_blob =   crop_img_text_locations( Image.open(cropped_image_path) , cropped_image_path , ocr_resp['words_loc'] ,new_cat , ocr_resp["text_string"] , request_id)  
 
                 base, ext = os.path.splitext(rotate_im_path)
                 rotated_cropped_img_path = f"{base}_cropped{ext}"
@@ -398,13 +402,14 @@ def img_process(new_img_path ,new_image_name,new_image_url , pg_no ,updated_img_
             image_schema =  pagecatname(image_schema,  new_cat)
             debug_log("starting extraction", "img_process", request_id)
 
-            image_schema = extract_data_based_on_doctype(image_schema , new_cat   , cropped_image_coordinates  ,new_image_name , new_img_path  ,ocr_resp, new_image_url ,new_img_diam ,  csv_row ,sql_dict , jsonObj , tempFilePaths)
+            image_schema = extract_data_based_on_doctype(image_schema , new_cat   , cropped_image_coordinates  ,new_image_name , new_img_path  ,ocr_resp, new_image_url ,new_img_diam ,  csv_row ,sql_dict , jsonObj , tempFilePaths , request_id)
             debug_log("extraction complete", "img_process", request_id)
 
             insert_cache(img_hash , image_schema)   
             debug_log("inserted cache in db", "img_process", request_id)
             return image_schema    
         except Exception as e:
+            debug_log(f"Exception in img_process as {str(e)} ", "img_process", request_id)
             sql_dict.update({"page_status":  "Failed"})       
             sql_dict.update({"page_remark":  str(e)})  
             insert_log(sql_dict , request_id)

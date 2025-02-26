@@ -21,7 +21,7 @@ def fetch_df(query,engine):
         return (False,"No info fetched")
 
 
-def get_category(emb, csv_row):
+def get_category(emb, csv_row , request_id):
     try:
         querry = f"SELECT id, category, (embeddings <=> '{emb[0]}') AS similarity FROM public.image_embedding_clip  ORDER BY similarity ASC LIMIT 1"
         status, image_embedding_record = fetch_df(querry, ENGINE)
@@ -29,13 +29,13 @@ def get_category(emb, csv_row):
         # append_csv(csv_row , str(similar_img['distances'][0][0]))
         return option
     except Exception as e:
-        print("Exception in get_category as :", str(e))
+        debug_log(f"Exception in get_category as {str(e)} ", "img_process", request_id)
         return None
 
 
-def get_category_text(input_text ,img_cat , csv_row , sql_dict):
+def get_category_text(input_text ,img_cat , csv_row , sql_dict , request_id):
     try:
-        text_features  = get_embedding_openai(input_text)
+        text_features  = get_embedding_openai(input_text , request_id)
         text_emb = text_features
         distance = 1
         similar_img_new = None
@@ -60,11 +60,11 @@ def get_category_text(input_text ,img_cat , csv_row , sql_dict):
         return option
         
     except Exception as e:
-        print("Exception in get_category_text as ::::", str(e))
+        debug_log(f"Exception in get_category_text as {str(e)} ", "img_process", request_id)
         return None
 
 
-def get_embedding_openai(text):
+def get_embedding_openai(text , request_id):
     try:
         embed = openaiclient_textemb.embeddings.create(
             model="text-embedding-ada-002",
@@ -72,4 +72,4 @@ def get_embedding_openai(text):
         ).data[0].embedding
         return embed
     except Exception as e:
-        print("Exception in get_embedding_openai as ::::", str(e))
+        debug_log(f"Exception in get_category_text as {str(e)} ", "img_process", request_id)
