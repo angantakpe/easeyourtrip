@@ -3,7 +3,7 @@ from src.azure_services.llm import openaiclient_textemb
 from dotenv import load_dotenv
 import json
 import pandas as pd
-from src.logging.sql_log import ENGINE
+from src.caching.cache_func import ENGINE
 load_dotenv(override= True)
 
 

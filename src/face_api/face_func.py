@@ -343,9 +343,9 @@ def getImageAnalysis(result, img_path, img_name):
                 face_height = ((((result["face_height"]/result["image_height"])*100)+25)/100)*result["image_height"]   
                 data1[5].append({"Face Height":str(round((face_height*25.4)/img_dpi,2))+" mm", "Image Height":str(round((result["image_height"]*25.4)/img_dpi,2))+" mm"})
             #checking if the face in the image is roll(face tilted towards shoulder)
-            data1.append(["Face Tilt Test","(-2) - (5)"])  
+            data1.append(["Face Tilt Test","(-10) - (10)"])  
             # print("face_orientation_roll::::",result["face_orientation_roll"] )
-            if  result["face_orientation_roll"]<=-2 or result["face_orientation_roll"]>5:
+            if  result["face_orientation_roll"]<=-10 or result["face_orientation_roll"]>10:
                 data1[6].append(result["face_orientation_roll"])
                 data1[6].append("Fail")
                 data1[6].append({"Face Roll": round(result["face_orientation_roll"] , 2)})
@@ -366,7 +366,7 @@ def getImageAnalysis(result, img_path, img_name):
 
             data1.append(["Face Facing Straight", "Straight"])  #checking if the face in the image is looking straight or not. (checks if the person is looking straight forward or in any other direction)
             # print("face_orientation_yaw::::",result["face_orientation_yaw"] , "face_orientation_pitch::::",result["face_orientation_pitch"])
-            if ((result["face_orientation_yaw"]<-2 or result["face_orientation_yaw"]>8.5) or (result["face_orientation_pitch"]<-8 or result["face_orientation_pitch"]>9)):
+            if ((result["face_orientation_yaw"]<-10 or result["face_orientation_yaw"]>10) or (result["face_orientation_pitch"]<-10 or result["face_orientation_pitch"]> 10)):
                 data1[8].append("Not Straight")
                 data1[8].append("Fail")#person not looking straight
                 data1[8].append({"Face Yaw": round(result["face_orientation_yaw"] , 2), "Face Pitch":  round(result["face_orientation_pitch"] , 2)})

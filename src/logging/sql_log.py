@@ -4,21 +4,13 @@ import sqlalchemy
 import uuid
 from dotenv import load_dotenv
 from src.logging.logger import debug_log
-
+from src.caching.cache_func import METADATA , ENGINE
 load_dotenv(override= True)
 
-# Database URI for PostgreSQL
-user_name = os.getenv('sql_username')
-password = os.getenv('sql_password')
-Db_name = os.getenv('cache_db_name')
-port_no = os.getenv('sql_port')
-host = os.getenv('host')
+
 LOG_TABLE_NAME = os.getenv('LOG_TABLE_NAME')
 FACE_TABLE_NAME= os.getenv('FACE_TABLE_NAME')
 
-DATABASE_URI = f'postgresql+psycopg2://{user_name}:{password}@{host}:{port_no}/{Db_name}'
-ENGINE = create_engine(DATABASE_URI, pool_recycle=1000, pool_pre_ping=True)
-METADATA = MetaData()
 
 # Define the cache table globally, only once
 LOG_TABLE = Table(
