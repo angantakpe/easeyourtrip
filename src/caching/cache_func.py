@@ -19,6 +19,11 @@ import uuid
 import json
 from datetime import datetime
 from dotenv import load_dotenv
+from src.logging.external_service_logger import (
+    log_external_request,
+    log_external_response,
+)
+from src.logging.logger import debug_log
 
 load_dotenv(override=True)
 # Database URI for PostgreSQL
@@ -45,8 +50,19 @@ CACHE_TABLE = Table(
 )
 
 
-def insert_cache(image_hash, image_data):
+def insert_cache(image_hash, image_data, request_id=None):
     try:
+        # Log the cache insert request
+        request_log = None
+        if request_id:
+            request_payload = {
+                "hash": str(image_hash),
+                "data_size": len(json.dumps(image_data)),
+            }
+            request_log = log_external_request(
+                "Cache", "insert", request_payload, request_id
+            )
+
         # Ensure the table exists
         # get_cache_table()
         # Convert image data to JSON
@@ -71,12 +87,43 @@ def insert_cache(image_hash, image_data):
                 connection.execute(ins)
         print("Added to db")
 
+        # Log the successful response
+        if request_id and request_log:
+            response_data = {"status": "success", "hash": str(image_hash)}
+            log_external_response(
+                "Cache",
+                "insert",
+                response_data,
+                request_id,
+                request_log_file=request_log,
+            )
+
     except Exception as e:
         print("Exception in insert_cache:", str(e))
 
+        # Log the error
+        if request_id and "request_log" in locals() and request_log:
+            log_external_response(
+                "Cache",
+                "insert",
+                None,
+                request_id,
+                status_code=500,
+                error=str(e),
+                request_log_file=request_log,
+            )
 
-def get_cache_data(image_hash):
+
+def get_cache_data(image_hash, request_id=None):
     try:
+        # Log the cache get request
+        request_log = None
+        if request_id:
+            request_payload = {"hash": str(image_hash)}
+            request_log = log_external_request(
+                "Cache", "get", request_payload, request_id
+            )
+
         # get_cache_table()
         select_query = select(CACHE_TABLE.c.data).where(
             CACHE_TABLE.c.hash == str(image_hash)
@@ -89,12 +136,58 @@ def get_cache_data(image_hash):
             if result is not None:
                 print("result:")
                 img_data = json.loads(result[0])
+
+                # Log the successful response
+                if request_id and request_log:
+                    response_data = {
+                        "status": "success",
+                        "hash": str(image_hash),
+                        "data_found": True,
+                        "data_size": len(result[0]),
+                    }
+                    log_external_response(
+                        "Cache",
+                        "get",
+                        response_data,
+                        request_id,
+                        request_log_file=request_log,
+                    )
+
                 return img_data  # Return the data column value
             else:
                 print(f"No cache found for the hash: {image_hash}")
+
+                # Log the not found response
+                if request_id and request_log:
+                    response_data = {
+                        "status": "not_found",
+                        "hash": str(image_hash),
+                        "data_found": False,
+                    }
+                    log_external_response(
+                        "Cache",
+                        "get",
+                        response_data,
+                        request_id,
+                        request_log_file=request_log,
+                    )
+
                 return None
     except Exception as e:
         print("Exception in get_cache_by_hash:", str(e))
+
+        # Log the error
+        if request_id and "request_log" in locals() and request_log:
+            log_external_response(
+                "Cache",
+                "get",
+                None,
+                request_id,
+                status_code=500,
+                error=str(e),
+                request_log_file=request_log,
+            )
+
         return None
 
 
@@ -109,13 +202,49 @@ def get_cache_table():
         print("Exception in get_cache_table:", str(e))
 
 
-def delete_cache(image_hash):
+def delete_cache(image_hash, request_id=None):
     try:
+        # Log the cache delete request
+        request_log = None
+        if request_id:
+            request_payload = {"hash": str(image_hash)}
+            request_log = log_external_request(
+                "Cache", "delete", request_payload, request_id
+            )
+
         # get_cache_table()
         delete_query = delete(CACHE_TABLE).where(CACHE_TABLE.c.hash == str(image_hash))
 
         with ENGINE.connect() as connection:
             result = connection.execute(delete_query)
             connection.commit()
+
+        # Log the successful response
+        if request_id and request_log:
+            response_data = {
+                "status": "success",
+                "hash": str(image_hash),
+                "rows_deleted": result.rowcount,
+            }
+            log_external_response(
+                "Cache",
+                "delete",
+                response_data,
+                request_id,
+                request_log_file=request_log,
+            )
+
     except Exception as e:
         print("Exception in del_cache as ::", str(e))
+
+        # Log the error
+        if request_id and "request_log" in locals() and request_log:
+            log_external_response(
+                "Cache",
+                "delete",
+                None,
+                request_id,
+                status_code=500,
+                error=str(e),
+                request_log_file=request_log,
+            )
