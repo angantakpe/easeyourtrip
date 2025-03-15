@@ -143,7 +143,23 @@ async def live():
     print("requestRecieved process")
     return "API IS LIVE"
 
-
+@app.get("/")
+async def root():
+    """
+    Root endpoint that provides basic information about the API
+    """
+    return {
+        "name": "EaseYourTrip Document AI API",
+        "version": "1.0.0",
+        "description": "API for processing and analyzing travel documents",
+        "endpoints": {
+            "/process": "Process and classify documents",
+            "/validImage": "Validate and process images",
+            "/extract_with_category": "Extract information with specified category",
+            "/live": "Check if the API is live",
+            "/docs": "API documentation (Swagger UI)",
+        },
+    }
 
 
 if __name__ == "__main__":

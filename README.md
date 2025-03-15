@@ -88,7 +88,7 @@ Health check endpoint
 
 3. **Start the server:**
     ```bash
-    uvicorn fastapi_app:app --port 5321
+    python -m uvicorn fast_api:app --port 5321
     ```
     The server will start on `http://127.0.0.1:5321` with 4 worker processes.
 

@@ -269,6 +269,22 @@ def img_process(new_img_path ,new_image_name,new_image_url , pg_no ,updated_img_
 
     try:
         cropped_image_path , crop_image_blob_url = crop_and_generate_image_url(new_image_name ,csv_row ,sql_dict , jsonObj)
+        
+        # Check if the file exists, if not try alternative extensions
+        if not os.path.exists(new_img_path):
+            # Try different extensions if the file doesn't exist
+            base_path, ext = os.path.splitext(new_img_path)
+            for alt_ext in ['.jpg', '.jpeg', '.png']:
+                alt_path = base_path + alt_ext
+                if os.path.exists(alt_path):
+                    debug_log(f"Using alternative path for image: {alt_path}", "img_process", request_id)
+                    new_img_path = alt_path
+                    break
+        
+        # If we still can't find the file, raise a clear error
+        if not os.path.exists(new_img_path):
+            raise FileNotFoundError(f"Image file not found at any extension: {new_img_path}")
+            
         image_pil = Image.open(new_img_path)
         new_img_diam  = image_pil.size
         ss = time.time()
@@ -345,7 +361,7 @@ def img_process(new_img_path ,new_image_name,new_image_url , pg_no ,updated_img_
                 rotate_im_dim = Image.open(rotate_im_path).size
                 rot_coord_staus , rotated_cordinates = rotate_coordinates( ocr_resp['words_loc'] ,angle, Image.open(cropped_image_path).size, Image.open(rotate_im_path).size , request_id)
                 if rot_coord_staus:
-                    cropped_image , cropped_image_coordinates , cropped_text_blob =   crop_img_text_locations( Image.open(rotate_im_path) , rotate_im_path , rotated_cordinates ,new_cat , ocr_resp["text_string"] , request_id )                      
+                    cropped_image , cropped_image_coordinates , cropped_text_blob =   crop_img_text_locations( Image.open(rotate_im_path) , rotate_im_path , rotated_cordinates ,new_cat , ocr_resp["text_string"] , request_id)                      
                 else:
                     cropped_image , cropped_image_coordinates , cropped_text_blob =   crop_img_text_locations( Image.open(cropped_image_path) , cropped_image_path , ocr_resp['words_loc'] ,new_cat , ocr_resp["text_string"] , request_id)  
 

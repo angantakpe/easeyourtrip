@@ -1,0 +1,21 @@
+version: '3'
+
+services:
+  streamlit:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8501:8501"
+    volumes:
+      - .:/app
+    environment:
+      - NURONAI_API_KEY_LOCAL=${NURONAI_API_KEY_LOCAL}
+      - API_URL=http://app:5321
+    networks:
+      - document-ai-network
+
+networks:
+  document-ai-network:
+    external: true
+    name: document-ai_easeyourtrip-network

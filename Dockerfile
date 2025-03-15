@@ -41,7 +41,8 @@ RUN  dpkg -i libgl1-mesa-glx_23.0.4-0ubuntu1.22.04.1_amd64.deb=
 RUN apt install -y libgl1
 RUN apt update
 RUN apt install -y libglx-mesa0
-Copy only the installed dependencies from the builder stage
+
+# Copy only the installed dependencies from the builder stage
 COPY --from=builder /root/.local /root/.local
  
 # Ensure logs and static directories exist

@@ -1,0 +1,62 @@
+services:
+  # app:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #     target: development
+  #   ports:
+  #     - "5321:5321"
+  #   volumes:
+  #     - .:/app
+  #     - ./logs:/app/logs
+  #     - ./static:/app/static
+  #   env_file:
+  #     - .env
+  #   environment:
+  #     - HOST=postgres
+  #     - SQL_PORT=5432
+  #     - SQL_USERNAME=easeyourtrip
+  #     - SQL_PASSWORD=easeyourtrip
+  #     - CACHE_DB_NAME=easeyourtrip
+  #     - NURONAI_API_KEY_LOCAL=local_development_key
+  #   command: uvicorn fast_api:app --host 0.0.0.0 --port 5321 --reload
+  #   depends_on:
+  #     - poppler
+  #     - postgres
+  #   networks:
+  #     - easeyourtrip-network
+
+  # poppler:
+  #   image: minidocks/poppler:latest
+  #   volumes:
+  #     - ./data:/data
+  #   command: tail -f /dev/null
+  #   networks:
+  #     - easeyourtrip-network
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      - POSTGRES_USER=easeyourtrip
+      - POSTGRES_PASSWORD=easeyourtrip
+      - POSTGRES_DB=easeyourtrip
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - easeyourtrip-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U easeyourtrip"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  easeyourtrip-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  # document-ai-static:

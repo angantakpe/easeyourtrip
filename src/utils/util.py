@@ -136,6 +136,20 @@ def getDPI(image_path):
             dpiWidth = round(width / width_in)
             return dpiHeight, dpiWidth
         
+        
+        # Check if the file exists, if not try alternative extensions
+        if not os.path.exists(image_path):
+            # Try different extensions if the file doesn't exist
+            base_path, ext = os.path.splitext(image_path)
+            for alt_ext in ['.jpg', '.jpeg', '.png']:
+                alt_path = base_path + alt_ext
+                if os.path.exists(alt_path):
+                    image_path = alt_path
+                    break
+        
+        # If we still can't find the file, raise an exception
+        if not os.path.exists(image_path):
+            raise FileNotFoundError(f"Image file not found: {image_path}")
         image = Image.open(image_path)
 
         try:
